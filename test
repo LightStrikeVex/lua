@@ -1,6 +1,7 @@
 -- Configuración
 local botonTamano = UDim2.new(0.1, 0, 0.1, 0) -- Tamaño del botón
 local botonPosicion = UDim2.new(0.9, 0, 0.8, 0) -- Posición del botón
+local alturaVuelo = 10 -- Altura a la que el personaje volará
 
 -- Variable para rastrear si el jugador está volando
 local volando = false
@@ -11,8 +12,15 @@ local function cambiarVuelo(activar)
     local character = jugador.Character
 
     if activar then
+        -- Guardar la posición actual del personaje
+        local posicionOriginal = character:WaitForChild("HumanoidRootPart").Position
+
         -- Lógica para activar el vuelo en Roblox
         character:WaitForChild("Humanoid").PlatformStand = true
+
+        -- Ajustar la posición para evitar que el personaje caiga
+        character:WaitForChild("HumanoidRootPart").Position = Vector3.new(posicionOriginal.X, alturaVuelo, posicionOriginal.Z)
+
         print("¡Estás volando!")
     else
         -- Lógica para desactivar el vuelo en Roblox
