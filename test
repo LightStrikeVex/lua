@@ -1,55 +1,82 @@
--- Configuración
-local botonTamano = UDim2.new(0.1, 0, 0.1, 0) -- Tamaño del botón
-local botonPosicion = UDim2.new(0.9, 0, 0.8, 0) -- Posición del botón
-local alturaVuelo = 10 -- Altura a la que el personaje volará
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 
--- Variable para rastrear si el jugador está volando
-local volando = false
+-- Crear el frame principal del teclado
+local keyboardFrame = Instance.new("Frame")
+keyboardFrame.Size = UDim2.new(0, 300, 0, 200)
+keyboardFrame.Position = UDim2.new(0.5, -150, 0.5, -100)
+keyboardFrame.BackgroundTransparency = 0.5
+keyboardFrame.BackgroundColor3 = Color3.new(0, 0, 0)
+keyboardFrame.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 
--- Función para activar o desactivar el vuelo
-local function cambiarVuelo(activar)
-    local jugador = game.Players.LocalPlayer
-    local character = jugador.Character
+-- Conectar una función al evento de clic del botón
+local function onButtonClick(letter)
+    print("Letra clickeada: " .. letter)
+    
+    -- Agregar la letra al texto existente en el jugador local (puedes ajustar según tu necesidad)
+    local player = Players.LocalPlayer
+    player:SetAttribute("InputText", (player:GetAttribute("InputText") or "") .. letter)
+end
 
-    if activar then
-        -- Guardar la posición actual del personaje
-        local posicionOriginal = character:WaitForChild("HumanoidRootPart").Position
+-- Crear botones de letras (puedes personalizar según tus necesidades)
+local letters = {"Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "A", "S", "D", "F", "G", "H", "J", "K", "L", "Z", "X", "C", "V", "B", "N", "M"}
 
-        -- Lógica para activar el vuelo en Roblox
-        character:WaitForChild("Humanoid").PlatformStand = true
+for i, letter in ipairs(letters) do
+    local button = Instance.new("TextButton")
+    button.Text = letter
+    button.Size = UDim2.new(0, 30, 0, 30)
+    button.Position = UDim2.new(0, (i - 1) * 30, 0, 0)
+    button.Parent = keyboardFrame
 
-        -- Ajustar la posición para evitar que el personaje caiga
-        character:WaitForChild("HumanoidRootPart").Position = Vector3.new(posicionOriginal.X, alturaVuelo, posicionOriginal.Z)
+    -- Conectar una función al evento de clic del botón
+    button.MouseButton1Click:Connect(function()
+        onButtonClick(letter)
+    end)
+end
 
-        print("¡Estás volando!")
-    else
-        -- Lógica para desactivar el vuelo en Roblox
-        character:WaitForChild("Humanoid").PlatformStand = false
-        print("Dejaste de volar.")
+-- Conectar una función al evento de input del usuario
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed then
+        -- Verificar si se está escribiendo en un TextBox, si no es así, limpiar el texto
+        local player = Players.LocalPlayer
+        local inputText = player:GetAttribute("InputText")
+        if inputText and input.UserInputType == Enum.UserInputType.Keyboard then
+            player:SetAttribute("InputText", "")
+        end
+    end
+end)
+
+-- Conectar una función al evento de eliminación del personaje
+local function onCharacterRemoving()
+    keyboardFrame:Destroy()
+end
+
+-- Conectar la función al evento de eliminación del personaje del jugador local
+Players.LocalPlayer.CharacterRemoving:Connect(onCharacterRemoving)
+
+-- Conectar una función al evento de cambio de salud
+local function onHealthChanged(health)
+    if health <= 0 then
+        -- Destruir el script si la salud llega a 0
+        keyboardFrame:Destroy()
     end
 end
 
--- Función que maneja los toques en el botón
-local function onTouch()
-    volando = not volando
-    cambiarVuelo(volando)
+-- Obtener el personaje del jugador local
+local character = Players.LocalPlayer.Character
+if character then
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        -- Conectar la función al evento de cambio de salud
+        humanoid.HealthChanged:Connect(onHealthChanged)
+    end
 end
 
--- Crear el botón
-local jugador = game.Players.LocalPlayer
-local gui = Instance.new("ScreenGui")
-gui.Parent = jugador.PlayerGui
-
-local boton = Instance.new("TextButton")
-boton.Text = "Volar"
-boton.Size = botonTamano
-boton.Position = botonPosicion
-boton.Parent = gui
-
--- Conectar la función onTouch al evento de toque del botón
-boton.MouseButton1Click:Connect(onTouch)
-
--- Conectar la función cambiarVuelo al evento de cambio de estado de vuelo
-jugador.CharacterAdded:Connect(function()
-    cambiarVuelo(false) -- Asegurarse de que el vuelo esté desactivado al unirse al juego
+-- Conectar la función al evento de añadir personaje
+Players.LocalPlayer.CharacterAdded:Connect(function(character)
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        -- Conectar la función al evento de cambio de salud cuando se añade el personaje
+        humanoid.HealthChanged:Connect(onHealthChanged)
+    end
 end)
